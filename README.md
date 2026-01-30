@@ -2,7 +2,7 @@
 
 **AI-powered image & PDF search engine for your computer**
 
-Find anything in your documents and photos using semantic understanding.
+Help you easily find PDFs and images in your laptop using semantic understanding.
 
 ## ⚡ Quick Start (30 Seconds)
 
@@ -20,8 +20,9 @@ python __main__.py
 ## 🎯 Features
 
 - 🖼️ **Image Search** - Find images using text descriptions
-- 📄 **PDF Search** - Search across PDF documents
+- 📄 **PDF Search** - Search across PDF documents (indexes first 3 pages)
 - 🤖 **AI-Powered** - Semantic understanding, not just keywords
+- 🔍 **Query Expansion** - Uses SLM (Small Language Model) to enhance search queries
 - ⚡ **Fast** - HNSW vector indexing
 - 🏠 **Local** - Everything stays on your computer
 - 💻 **Lightweight** - Minimal dependencies, runs anywhere
@@ -29,7 +30,7 @@ python __main__.py
 ## 📦 Requirements
 
 - Python 3.9+
-- ~5GB disk space (for ML models)
+- ~1GB disk space (for ML models)
 - `uv` (or standard pip)
 
 ## 🚀 Setup Options
@@ -95,7 +96,7 @@ batch_size: int = 16
 ```
 
 **Models not downloading?**
-- Check disk space (need ~5GB)
+- Check disk space (need ~1GB)
 - Models go to: `~/.ottersearch/models/`
 
 ## 🧪 Running Tests
@@ -124,8 +125,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 📊 Performance
 
-- Indexing: ~1-2 files/second
-- Search: <500ms for 1000+ documents
+- Indexing: ~30 docs/second
+- Search: <2 sec for 11000+ documents
 - Memory: 2-4GB with batch processing
 
 ## 🤝 Contributing
