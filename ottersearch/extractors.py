@@ -31,9 +31,5 @@ def extract_image(path: Path) -> Path:
     """Load and return PIL Image"""
     try:
         return path
-        # img = Image.open(path)
-        # if img.mode == 'P':  # Palette mode with transparency
-        #     img = img.convert('RGBA')
-        # return img.convert("RGB")
     except Exception as e:
         raise RuntimeError(f"cannot identify image file '{path}'") from e

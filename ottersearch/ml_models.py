@@ -36,6 +36,19 @@ class ModelManager:
         self.slm, self.slm_tokenizer = self.get_slm()
     
     def encode_text(self, texts: list[str]) -> np.ndarray:
+        """Encode text strings into embeddings using SentenceTransformer.
+        
+        Args:
+            texts: List of text strings to encode
+            
+        Returns:
+            numpy array of shape (len(texts), 384) containing text embeddings
+            
+        Error Handling:
+            - Empty text strings are encoded as-is (model handles them)
+            - Model errors propagate to caller
+            - No validation of input text length
+        """
         return self.text_encoder.encode(
             texts, 
             batch_size=64,
@@ -45,7 +58,23 @@ class ModelManager:
     
     
     def encode_images(self, images: list[object]) -> tuple[np.ndarray, list[int]]:
-        """Returns (embeddings, successful_indices)"""
+        """Encode image files into CLIP embeddings.
+        
+        Args:
+            images: List of Path objects pointing to image files
+            
+        Returns:
+            Tuple of (embeddings, successful_indices):
+                - embeddings: numpy array of shape (N, 512) where N <= len(images)
+                - successful_indices: List of original indices that were successfully encoded
+                
+        Error Handling:
+            - Images smaller than 10x10 pixels are skipped
+            - Image loading errors (corrupt files, unsupported formats) are caught and skipped
+            - Batch encoding errors skip entire batch but continue with next batch
+            - Returns empty array and empty list if all images fail
+            - No error propagation - all exceptions silently handled
+        """
         batch_size = 16
         all_embeddings = []
         successful_indices = []
@@ -59,14 +88,11 @@ class ModelManager:
                 for j, p in enumerate(batch_paths):
                     try:
                         img = Image.open(p).convert("RGB")
-                        # Validate image
                         if img.size[0] < 10 or img.size[1] < 10:
-                            print(f"⚠️  Skipping tiny image {p.name}")
                             continue
                         pil_images.append(img)
                         batch_indices.append(i + j)
                     except Exception as e:
-                        print(f"⚠️  Skipping {p.name}: {e}")
                         continue
                 
                 if pil_images:
@@ -77,7 +103,6 @@ class ModelManager:
                         all_embeddings.append(embeddings.cpu().numpy())
                         successful_indices.extend(batch_indices)
                     except Exception as e:
-                        print(f"⚠️  Batch encoding failed: {e}")
                         continue
         
         if not all_embeddings:
@@ -86,6 +111,19 @@ class ModelManager:
         return np.vstack(all_embeddings), successful_indices
     
     def get_slm(self) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
+        """Get or load the Small Language Model and its tokenizer.
+        
+        Lazily loads the SLM on first call. Subsequent calls return cached instances.
+        
+        Returns:
+            Tuple of (model, tokenizer)
+            
+        Error Handling:
+            - Model loading errors propagate to caller
+            - Requires ~300MB disk space for model download
+            - May fail if insufficient GPU/CPU memory
+            - Network errors during download are not handled
+        """
         if self.slm is None:
             self.slm = AutoModelForCausalLM.from_pretrained(
                 config.slm_model,
@@ -100,6 +138,23 @@ class ModelManager:
         return self.slm, self.tokenizer
     
     def generate_query_variations(self, query: str, n: int = None) -> list[str]:
+        """Generate synonym variations of a search query using SLM.
+        
+        Args:
+            query: Original search query string
+            n: Number of variations to generate (default: config.num_query_variations)
+            
+        Returns:
+            List containing original query plus up to n variations.
+            First element is always the original query.
+            
+        Error Handling:
+            - SLM loading errors propagate to caller
+            - If SLM generates fewer than n variations, returns what's available
+            - Lines starting with 'Generate', '#', or '-' are filtered out
+            - Empty/whitespace-only lines are skipped
+            - Model inference errors propagate to caller
+        """
         if self.slm is None:
             self.slm, self.tokenizer = self.get_slm()
             
@@ -142,14 +197,6 @@ Rules:
         ][:n]
         
         return [query] + variations
-    
-    # def encode_text_batch(self, texts: list[str]) -> np.ndarray:
-    #     # embeddings = model.encode(text=texts)
-    #     text_inputs = self.bge_tokenizer(texts, return_tensors="pt", padding=True).to(self.model.device)
-    #     embeddings = self.model.encode_text(text_inputs)
-
-    #     return embeddings.cpu().numpy()
-
 
     def chunk_text_token_safe(
         self,
@@ -157,8 +204,22 @@ Rules:
         max_tokens: int = 500,
         overlap: int = 50,
     ) -> list[str]:
-        """
-        Chunk text using tokenizer tokens so it NEVER exceeds model limits
+        """Chunk text into token-safe segments for model processing.
+        
+        Uses BGE tokenizer to ensure chunks never exceed model token limits.
+        
+        Args:
+            text: Text string to chunk
+            max_tokens: Maximum tokens per chunk
+            overlap: Number of overlapping tokens between consecutive chunks
+            
+        Returns:
+            List of text chunks, each guaranteed to be <= max_tokens
+            
+        Error Handling:
+            - Empty text returns empty list after one iteration
+            - Tokenization errors propagate to caller
+            - Very short text may return single chunk
         """
         input_ids = self.bge_tokenizer(
             text,
@@ -178,7 +239,6 @@ Rules:
             )
             chunks.append(chunk_text)
 
-            # overlap
             start = end - overlap
             if start < 0:
                 start = 0
@@ -186,7 +246,15 @@ Rules:
         return chunks
     
     def unload_slm(self):
-        """Free SLM memory"""
+        """Free SLM memory and trigger garbage collection.
+        
+        Deletes model and tokenizer instances, clears CUDA cache if available,
+        and forces Python garbage collection to reclaim memory.
+        
+        Error Handling:
+            - Safe to call multiple times (checks if slm is None)
+            - CUDA cache clearing fails silently on non-CUDA systems
+        """
         if self.slm is not None:
             del self.slm
             del self.tokenizer

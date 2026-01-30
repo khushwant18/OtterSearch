@@ -10,7 +10,8 @@ from .indexer import Indexer, indexing_status
 from .searcher import HybridSearcher
 from .storage import MetadataStore
 from .ml_models import ModelManager
-
+import subprocess
+import platform
 
 def create_app(ui_html: str) -> Flask:
     """Create and configure Flask application"""
@@ -40,7 +41,6 @@ def create_app(ui_html: str) -> Flask:
                 # For images, serve directly
                 return send_file(file_path)
         except Exception as e:
-            print(f"Preview error: {e}")
             return str(e), 500
 
     @app.route('/open/<path:filepath>')
@@ -53,9 +53,6 @@ def create_app(ui_html: str) -> Flask:
             file_path = Path(filepath)
             if not file_path.exists():
                 return jsonify({"error": "File not found"}), 404
-            
-            import subprocess
-            import platform
             
             system = platform.system()
             if system == "Darwin":  # macOS
@@ -80,8 +77,6 @@ def create_app(ui_html: str) -> Flask:
             if not file_path.exists():
                 return jsonify({"error": "File not found"}), 404
             
-            import subprocess
-            import platform
             
             system = platform.system()
             if system == "Darwin":  # macOS

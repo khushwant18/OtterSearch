@@ -10,7 +10,16 @@ from .ml_models import ModelManager
 
 
 class HybridSearcher:
+    """Hybrid semantic search across PDF and image documents.
+    
+    Combines query expansion using SLM with type-specific vector search.
+    Uses separate vector stores for PDFs (text embeddings) and images (CLIP embeddings).
+    """
     def __init__(self):
+        """Initialize searcher with model manager and vector stores.
+        
+        Loads both PDF and image vector stores from disk.
+        """
         self.model_manager = ModelManager()
         self.vector_store_pdf = VectorStore(store_type="pdf", dim=config.text_vector_dim)
         self.vector_store_pdf.initialize()
@@ -43,8 +52,24 @@ class HybridSearcher:
     
 
     def search(self, query: str, top_k: int = 3) -> list[SearchResult]:
+        """Search for documents matching the query.
+        
+        Process:
+        1. Generate query variations using SLM
+        2. Detect query type (image/pdf/both) from variations
+        3. Encode queries with appropriate models (CLIP for images, text encoder for PDFs)
+        4. Search relevant vector stores
+        5. Deduplicate results by document path, keeping highest score
+        
+        Args:
+            query: User search query string
+            top_k: Maximum results per query variation per store
+            
+        Returns:
+            List of SearchResult objects, deduplicated and sorted by score descending.
+            Each unique document path appears only once with its highest similarity score.
+        """
         variations = self.model_manager.generate_query_variations(query, n=3)
-        print(f"Query variations: {variations}")
         query_type = [self._detect_query_type(variation) for variation in variations]
         if 'image' in query_type:
             query_type = 'image'
@@ -52,32 +77,18 @@ class HybridSearcher:
             query_type = 'pdf'  
         else:
             query_type = 'both'
-        print(f"Query type: {query_type}")
         
-        # Choose which stores to search
         stores_to_search = []
         if query_type in ['pdf', 'both']:
             stores_to_search.append(('pdf', self.vector_store_pdf))
         if query_type in ['image', 'both']:
             stores_to_search.append(('image', self.vector_store_image))
         
-        # Search selected stores
         all_results: dict[str, float] = {}
-        
-        # for store_type, vector_store in stores_to_search:
-        #     print(f"Searching {store_type} index...") 
-        #     for variation in variations:
-        #         query_embedding = self.model_manager.encode_text([variation])[0]
-        #         vec_results = vector_store.search(query_embedding.reshape(1, -1), k=top_k)
-        #         for doc_id, score in vec_results:
-        #             all_results[doc_id] = score
 
         for store_type, vector_store in stores_to_search:
-            print(f"Searching {store_type} index...") 
             for variation in variations:
-                # Use appropriate encoder based on store type
                 if store_type == 'image':
-                    # Encode text query with CLIP text encoder
                     inputs = self.model_manager.clip_processor(text=[variation], return_tensors="pt", padding=True)
                     with torch.no_grad():
                         query_embedding = self.model_manager.clip_model.get_text_features(**inputs)
@@ -92,7 +103,6 @@ class HybridSearcher:
         
         sorted_ids = sorted(all_results.items(), key=lambda x: x[1], reverse=True)
         
-        # Deduplicate by path - keep highest score per document
         seen_paths = {}
         unique_docs = {}
         
@@ -102,12 +112,10 @@ class HybridSearcher:
                 if doc:
                     path_str = str(doc.path)
                     
-                    # Only keep first occurrence (highest score due to sorting)
                     if path_str not in seen_paths:
                         seen_paths[path_str] = score
                         unique_docs[path_str] = doc
         
-        # Build results from unique documents
         results = []
         for path_str, score in seen_paths.items():
             doc = unique_docs[path_str]
