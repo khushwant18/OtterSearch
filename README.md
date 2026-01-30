@@ -126,7 +126,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 📊 Performance
 
 - Indexing: ~30 docs/second
-- Search: <2 sec for 11000+ documents
+- Search: <2 sec for 30000+ documents
 - Memory: 2-4GB with batch processing
 
 ## 🤝 Contributing
