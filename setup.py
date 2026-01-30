@@ -13,7 +13,7 @@ setup(
     description="Lightweight image & PDF search with AI-powered semantic understanding",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/ottersearch",
+    url="https://github.com/khushwant18/OtterSearch",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
