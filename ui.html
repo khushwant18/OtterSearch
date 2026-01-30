@@ -69,13 +69,16 @@
         .logo {
             font-size: 3.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
             opacity: 0;
             animation: fadeInUp 0.8s ease forwards;
             letter-spacing: -0.02em;
+        }
+
+        .logo .text {
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .tagline {
@@ -1049,7 +1052,7 @@
 
     <div class="container">
         <div class="search-section" id="searchSection">
-            <div class="logo">OtterSearch</div>
+            <div class="logo">🦦 <span class="text">OtterSearch</span></div>
             <div class="tagline">Find anything in your documents, instantly</div>
 
             <div class="search-container">
