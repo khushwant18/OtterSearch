@@ -30,13 +30,13 @@ class Indexer:
         self.vector_store_image = VectorStore(store_type="image", dim=config.image_vector_dim)
 
     
-    def index_directory(self, directory: Path, recursive: bool = True, update_mode: bool = False):
+    def index_directory(self, directory: Path, recursive: bool = True, update_mode: bool = True):
         """Index all PDF and image files in a directory.
         
         Args:
             directory: Path to directory to index
             recursive: If True, recursively search subdirectories
-            update_mode: If True, only index new files not already in metadata store.
+            update_mode: If True (default), only index new files not already in metadata store.
                         If False, reindex all files regardless of existing entries.
         
         Updates global indexing_status dict with progress information:

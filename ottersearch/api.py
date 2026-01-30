@@ -94,7 +94,7 @@ def create_app(ui_html: str) -> Flask:
     def index():
         return ui_html
 
-    def run_indexing(path, recursive, update_mode=False):
+    def run_indexing(path, recursive, update_mode=True):
         try:
             indexing_status["running"] = True
             indexing_status["progress"] = "Starting..."
@@ -174,7 +174,7 @@ def create_app(ui_html: str) -> Flask:
             return jsonify({"error": str(e)}), 500
 
     def index_multiple_paths(paths):
-        """Index multiple directories sequentially (full index)"""
+        """Index multiple directories sequentially (full reindex - forces reindexing of all files)"""
         for path in paths:
             if path.exists():
                 indexing_status["progress"] = f"Indexing {path.name}..."
