@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OtterSearch - Find Anything</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #f5f5f7;
+            --bg-secondary: #ffffff;
+            --accent-1: #007aff;
+            --accent-2: #5856d6;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 30% 20%, rgba(0, 122, 255, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(88, 86, 214, 0.05) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-section.active {
+            min-height: auto;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            letter-spacing: -0.02em;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease 0.2s forwards;
+            font-weight: 400;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 700px;
+            position: relative;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease 0.4s forwards;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1.5rem 5.5rem 1.5rem 2rem;
+            font-size: 1.1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-primary);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--accent-1);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1),
+                        0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border: none;
+            padding: 0.9rem 2.2rem;
+            border-radius: 16px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.02);
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
+        }
+
+        .search-btn:active {
+            transform: translateY(-50%) scale(0.98);
+        }
+
+        .search-btn.loading {
+            pointer-events: none;
+        }
+
+        .search-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            top: 50%;
+            left: 50%;
+            margin-left: -9px;
+            margin-top: -9px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .settings-btn {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            box-shadow: var(--shadow);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .index-panel {
+            position: fixed;
+            top: 0;
+            right: -500px;
+            width: 500px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--glass-border);
+            box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .index-panel.show {
+            right: 0;
+        }
+
+        .index-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--bg-primary);
+        }
+
+        .index-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .index-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .index-stats {
+            margin-top: 1rem;
+            padding: 1rem 1.25rem;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .index-stats.loaded {
+            background: rgba(52, 199, 89, 0.1);
+            border: 1px solid rgba(52, 199, 89, 0.2);
+        }
+
+        .index-stats.empty {
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-value.success {
+            color: #34c759;
+        }
+
+        .stat-value.warning {
+            color: #ff9500;
+        }
+
+        .index-body {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .index-section {
+            margin-bottom: 2rem;
+        }
+
+        .index-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .quick-index-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .quick-index-btn {
+            padding: 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quick-index-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--accent-1);
+            color: var(--accent-1);
+            transform: translateY(-2px);
+        }
+
+        .quick-index-btn .icon {
+            font-size: 0.95rem;
+        }
+
+        .index-all-btn {
+            width: 100%;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0, 122, 255, 0.3);
+            margin-bottom: 0.75rem;
+        }
+
+        .index-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+        }
+
+        .update-index-btn {
+            width: 100%;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        .update-index-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+        }
+
+        .path-input-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .path-input {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .path-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--accent-1);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .browse-btn {
+            padding: 0.875rem 1.5rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .browse-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--accent-1);
+            color: var(--accent-1);
+        }
+
+        .index-action-btn {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0, 122, 255, 0.3);
+            margin-top: 1rem;
+        }
+
+        .index-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+        }
+
+        .index-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .index-action-btn.loading::after {
+            content: '';
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-left: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--glass-bg);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-group:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 1rem;
+            padding: 1.25rem;
+            background: var(--glass-bg);
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .progress-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .progress-stats {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-message {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .status-message {
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .status-message.success {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+            border: 1px solid rgba(52, 199, 89, 0.2);
+            display: block;
+        }
+
+        .status-message.error {
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            display: block;
+        }
+
+        .status-message.info {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--accent-1);
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            display: block;
+        }
+
+        .panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .panel-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .results-section {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.5s ease, max-height 0.5s ease;
+        }
+
+        .results-section.show {
+            opacity: 1;
+            max-height: 10000px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .results-count {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .result-card {
+            position: relative;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.25rem;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideUp 0.4s ease forwards;
+            opacity: 0;
+            box-shadow: var(--shadow);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-hover);
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .result-number {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 0.3rem 0.7rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        .preview-thumbnail {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            background: var(--bg-primary);
+        }
+
+        .preview-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .result-card:hover .preview-thumbnail img {
+            transform: scale(1.05);
+        }
+
+        .preview-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+        .match-badge {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: rgba(0, 122, 255, 0.95);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.3rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-primary);
+        }
+
+        .result-path {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--accent-1);
+            color: var(--accent-1);
+            transform: translateY(-2px);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 2rem;
+        }
+
+        .modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.75rem 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: rgba(0, 0, 0, 0.05);
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+            flex: 1;
+            background: var(--bg-secondary);
+        }
+
+        .preview-image {
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .preview-text {
+            line-height: 1.8;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            font-size: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.4;
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .tagline {
+                font-size: 1.1rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-input {
+                padding: 1.2rem 4.5rem 1.2rem 1.5rem;
+                font-size: 1rem;
+            }
+
+            .search-btn {
+                padding: 0.75rem 1.75rem;
+            }
+
+            .index-panel {
+                width: 100%;
+                right: -100%;
+            }
+
+            .settings-btn {
+                top: 1rem;
+                right: 1rem;
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+
+            .quick-index-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="settings-btn" id="settingsBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m-2 2l-4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m-2-2l-4.2-4.2"></path>
+        </svg>
+        Index Settings
+    </button>
+
+    <div class="panel-overlay" id="panelOverlay"></div>
+
+    <div class="index-panel" id="indexPanel">
+        <div class="index-header">
+            <div class="index-title">Index Settings</div>
+            <div class="index-subtitle">Manage your document index</div>
+            
+            <!-- Index Stats -->
+            <div class="index-stats" id="indexStats">
+                <div class="stat-item">
+                    <div class="stat-label">Indexed Documents</div>
+                    <div class="stat-value" id="totalDocs">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">PDFs</div>
+                    <div class="stat-value" id="pdfCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Images</div>
+                    <div class="stat-value" id="imageCount">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="index-body">
+            <!-- Quick Actions -->
+            <div class="index-section">
+                <div class="index-section-title">Quick Actions</div>
+                <button class="index-all-btn" id="indexAllBtn">
+                    Index All (Documents, Desktop, Downloads)
+                </button>
+                <button class="update-index-btn" id="updateIndexBtn">
+                    Update Index (New Files Only)
+                </button>
+            </div>
+
+            <!-- Quick Paths -->
+            <div class="index-section">
+                <div class="index-section-title">Quick Index</div>
+                <div class="quick-index-grid">
+                    <button class="quick-index-btn" onclick="quickIndex('~/Documents')">
+                        <span class="icon">Documents</span>
+                    </button>
+                    <button class="quick-index-btn" onclick="quickIndex('~/Desktop')">
+                        <span class="icon">Desktop</span>
+                    </button>
+                    <button class="quick-index-btn" onclick="quickIndex('~/Downloads')">
+                        <span class="icon">Downloads</span>
+                    </button>
+                    <button class="quick-index-btn" onclick="quickIndex('~/Pictures')">
+                        <span class="icon">Pictures</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-header">
+                    <span class="progress-label">Indexing Progress</span>
+                    <span class="progress-stats" id="progressStats">0 / 0</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-message" id="progressMessage">Preparing...</div>
+            </div>
+
+            <!-- Custom Path -->
+            <div class="index-section">
+                <div class="index-section-title">Custom Path</div>
+                <div class="path-input-group">
+                    <input 
+                        type="text" 
+                        class="path-input" 
+                        id="indexPath"
+                        placeholder="/Users/you/Documents"
+                    >
+                    <button class="browse-btn" onclick="alert('Enter full path (e.g., /Users/yourname/Documents)')">
+                        Browse
+                    </button>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="recursiveIndex" checked>
+                    <label for="recursiveIndex">Include subdirectories (recursive)</label>
+                </div>
+
+                <button class="index-action-btn" id="startIndexBtn">
+                    Start Indexing
+                </button>
+                
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="search-section" id="searchSection">
+            <div class="logo">OtterSearch</div>
+            <div class="tagline">Find anything in your documents, instantly</div>
+
+            <div class="search-container">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="searchInput"
+                        placeholder="Search for documents, images, PDFs..."
+                        autocomplete="off"
+                    >
+                    <button class="search-btn" id="searchBtn">Search</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <div class="results-count" id="resultsCount"></div>
+            </div>
+            <div class="results-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="previewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle"></div>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchSection = document.getElementById('searchSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const resultsCount = document.getElementById('resultsCount');
+        const previewModal = document.getElementById('previewModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalClose = document.getElementById('modalClose');
+        
+        const settingsBtn = document.getElementById('settingsBtn');
+        const indexPanel = document.getElementById('indexPanel');
+        const panelOverlay = document.getElementById('panelOverlay');
+        const indexPath = document.getElementById('indexPath');
+        const recursiveIndex = document.getElementById('recursiveIndex');
+        const startIndexBtn = document.getElementById('startIndexBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const indexAllBtn = document.getElementById('indexAllBtn');
+        const updateIndexBtn = document.getElementById('updateIndexBtn');
+        
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressStats = document.getElementById('progressStats');
+        const progressMessage = document.getElementById('progressMessage');
+        
+        const indexStats = document.getElementById('indexStats');
+        const totalDocs = document.getElementById('totalDocs');
+        const pdfCount = document.getElementById('pdfCount');
+        const imageCount = document.getElementById('imageCount');
+
+        let currentResults = [];
+        let pollInterval = null;
+
+        // Load index stats on page load
+        loadIndexStats();
+
+        async function loadIndexStats() {
+            try {
+                const response = await fetch('/stats');
+                const stats = await response.json();
+                
+                const total = stats.total || 0;
+                const pdfs = stats.by_type?.pdf || 0;
+                const images = stats.by_type?.image || 0;
+                
+                totalDocs.textContent = total.toLocaleString();
+                pdfCount.textContent = pdfs.toLocaleString();
+                imageCount.textContent = images.toLocaleString();
+                
+                if (total > 0) {
+                    indexStats.classList.add('loaded');
+                    indexStats.classList.remove('empty');
+                    totalDocs.classList.add('success');
+                } else {
+                    indexStats.classList.add('empty');
+                    indexStats.classList.remove('loaded');
+                    totalDocs.classList.add('warning');
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                indexStats.classList.add('empty');
+            }
+        }
+
+        // Panel controls
+        settingsBtn.addEventListener('click', () => {
+            indexPanel.classList.add('show');
+            panelOverlay.classList.add('show');
+        });
+
+        panelOverlay.addEventListener('click', () => {
+            indexPanel.classList.remove('show');
+            panelOverlay.classList.remove('show');
+        });
+
+        function setPath(path) {
+            indexPath.value = path;
+        }
+
+        // Quick index function
+        async function quickIndex(path) {
+            indexPath.value = path;
+            recursiveIndex.checked = true;
+            startIndexing();
+        }
+
+        // Index All button
+        indexAllBtn.addEventListener('click', async () => {
+            if (!confirm('This will index Documents, Desktop, and Downloads. Continue?')) {
+                return;
+            }
+
+            indexAllBtn.disabled = true;
+            indexAllBtn.textContent = 'Indexing All...';
+
+            try {
+                const response = await fetch('/index/all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('Indexing all directories started...', 'info');
+                    startPolling();
+                } else {
+                    showStatus(`Error: ${data.error}`, 'error');
+                    indexAllBtn.disabled = false;
+                    indexAllBtn.textContent = 'Index All (Documents, Desktop, Downloads)';
+                }
+            } catch (error) {
+                showStatus('Failed to start indexing', 'error');
+                indexAllBtn.disabled = false;
+                indexAllBtn.textContent = 'Index All (Documents, Desktop, Downloads)';
+            }
+        });
+
+        // Update Index button
+        updateIndexBtn.addEventListener('click', async () => {
+            updateIndexBtn.disabled = true;
+            updateIndexBtn.textContent = 'Updating...';
+
+            try {
+                const response = await fetch('/index/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: indexPath.value || '~/Documents'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('Update started (new files only)...', 'info');
+                    startPolling();
+                } else {
+                    showStatus(`Error: ${data.error}`, 'error');
+                    updateIndexBtn.disabled = false;
+                    updateIndexBtn.textContent = 'Update Index (New Files Only)';
+                }
+            } catch (error) {
+                showStatus('Failed to start update', 'error');
+                updateIndexBtn.disabled = false;
+                updateIndexBtn.textContent = 'Update Index (New Files Only)';
+            }
+        });
+
+        // Start indexing
+        startIndexBtn.addEventListener('click', startIndexing);
+
+        async function startIndexing() {
+            const path = indexPath.value.trim();
+            if (!path) {
+                showStatus('Please enter a directory path', 'error');
+                return;
+            }
+
+            startIndexBtn.disabled = true;
+            startIndexBtn.classList.add('loading');
+            startIndexBtn.textContent = 'Indexing...';
+
+            try {
+                const response = await fetch('/index', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: path,
+                        recursive: recursiveIndex.checked
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('Indexing started...', 'info');
+                    startPolling();
+                } else {
+                    showStatus(`Error: ${data.error}`, 'error');
+                    resetIndexButtons();
+                }
+            } catch (error) {
+                showStatus('Failed to start indexing', 'error');
+                resetIndexButtons();
+            }
+        }
+
+        function startPolling() {
+            progressContainer.classList.add('active');
+            pollIndexingStatus();
+        }
+
+        async function pollIndexingStatus() {
+            if (pollInterval) clearInterval(pollInterval);
+            
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/index/status');
+                    const status = await response.json();
+
+                    if (status.running) {
+                        // Update progress bar
+                        const total = status.total || 0;
+                        const processed = status.processed || 0;
+                        const percentage = total > 0 ? (processed / total) * 100 : 0;
+                        
+                        progressBar.style.width = `${percentage}%`;
+                        progressStats.textContent = `${processed} / ${total}`;
+                        progressMessage.textContent = status.progress || 'Processing...';
+                        
+                        showStatus(`Indexing... ${status.progress}`, 'info');
+                    } else {
+                        clearInterval(pollInterval);
+                        progressContainer.classList.remove('active');
+                        resetIndexButtons();
+
+                        if (status.error) {
+                            showStatus(`Error: ${status.error}`, 'error');
+                        } else {
+                            showStatus(`Indexed ${status.count} documents successfully`, 'success');
+                            // Reload stats after indexing completes
+                            loadIndexStats();
+                            // Reset progress bar
+                            setTimeout(() => {
+                                progressBar.style.width = '0%';
+                                progressStats.textContent = '0 / 0';
+                            }, 2000);
+                        }
+                    }
+                } catch (error) {
+                    clearInterval(pollInterval);
+                    progressContainer.classList.remove('active');
+                    showStatus('Status check failed', 'error');
+                    resetIndexButtons();
+                }
+            }, 1000); // Check every second
+        }
+
+        function resetIndexButtons() {
+            startIndexBtn.disabled = false;
+            startIndexBtn.classList.remove('loading');
+            startIndexBtn.textContent = 'Start Indexing';
+            
+            indexAllBtn.disabled = false;
+            indexAllBtn.textContent = 'Index All (Documents, Desktop, Downloads)';
+            
+            updateIndexBtn.disabled = false;
+            updateIndexBtn.textContent = 'Update Index (New Files Only)';
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+        }
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) return;
+
+            searchBtn.classList.add('loading');
+            searchBtn.textContent = '';
+            
+            try {
+                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                currentResults = data.results || [];
+                displayResults(currentResults, query);
+                
+                searchSection.classList.add('active');
+                resultsSection.classList.add('show');
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Search failed. Please try again.');
+            } finally {
+                searchBtn.classList.remove('loading');
+                searchBtn.textContent = 'Search';
+            }
+        }
+
+        function displayResults(results, query) {
+            resultsCount.textContent = `${results.length} results for "${query}"`;
+            resultsGrid.innerHTML = '';
+
+            if (results.length === 0) {
+                resultsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">∅</div>
+                        <div>No results found</div>
+                    </div>
+                `;
+                return;
+            }
+
+            results.forEach((result, index) => {
+                const card = createResultCard(result, index);
+                resultsGrid.appendChild(card);
+            });
+        }
+
+        function createResultCard(result, index) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.style.animationDelay = `${index * 0.05}s`;
+
+            const isImage = result.document.doc_type === 'image';
+            const fileName = result.document.path.split('/').pop();
+            const matchPercent = (result.score * 100).toFixed(1);
+            const resultNumber = index + 1;
+            
+            card.innerHTML = `
+                <div class="result-number">#${resultNumber}</div>
+                <div class="preview-thumbnail">
+                    <img src="/preview/${encodeURIComponent(result.document.path)}" 
+                         alt="${fileName}"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="preview-fallback" style="display:none;">
+                        <span>${isImage ? 'IMG' : 'PDF'}</span>
+                    </div>
+                    <div class="match-badge">${matchPercent}%</div>
+                </div>
+                <div class="result-header">
+                    <div class="result-info">
+                        <div class="result-title" title="${fileName}">${fileName}</div>
+                        <div class="result-path" title="${result.document.path}">
+                            ${result.document.path}
+                        </div>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <button class="action-btn" onclick="openFile('${result.document.path}', event)">
+                        Open
+                    </button>
+                    <button class="action-btn" onclick="showInFinder('${result.document.path}', event)">
+                        Show in Finder
+                    </button>
+                </div>
+            `;
+
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.action-btn')) {
+                    openPreview(result);
+                }
+            });
+
+            return card;
+        }
+
+        async function openFile(filepath, event) {
+            event.stopPropagation();
+            try {
+                await fetch(`/open/${encodeURIComponent(filepath)}`);
+            } catch (error) {
+                console.error('Error opening file:', error);
+                alert('Failed to open file');
+            }
+        }
+
+        async function showInFinder(filepath, event) {
+            event.stopPropagation();
+            try {
+                await fetch(`/reveal/${encodeURIComponent(filepath)}`);
+            } catch (error) {
+                console.error('Error revealing file:', error);
+                alert('Failed to show file in Finder');
+            }
+        }
+
+        function openPreview(result) {
+            const fileName = result.document.path.split('/').pop();
+            modalTitle.textContent = fileName;
+
+            if (result.document.doc_type === 'image') {
+                modalBody.innerHTML = `
+                    <img src="/file/${encodeURIComponent(result.document.path)}" 
+                         class="preview-image" 
+                         alt="${fileName}">
+                `;
+            } else {
+                modalBody.innerHTML = `
+                    <div class="preview-text">${result.document.content || result.snippet}</div>
+                `;
+            }
+
+            previewModal.classList.add('show');
+        }
+
+        function closePreview() {
+            previewModal.classList.remove('show');
+        }
+
+        function showError(message) {
+            resultsGrid.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">!</div>
+                    <div>${message}</div>
+                </div>
+            `;
+            resultsSection.classList.add('show');
+        }
+
+        searchBtn.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        modalClose.addEventListener('click', closePreview);
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) closePreview();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closePreview();
+                if (indexPanel.classList.contains('show')) {
+                    indexPanel.classList.remove('show');
+                    panelOverlay.classList.remove('show');
+                }
+            }
+        });
+
+        searchInput.focus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+torch
+transformers
+sentence-transformers
+flask
+hnswlib
+numpy
+PyMuPDF
+Pillow
+clip
+
+# Development dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
