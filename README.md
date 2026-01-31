@@ -52,10 +52,10 @@ python __main__.py
 ## 📖 Usage
 
 1. Open **http://localhost:8000**
-2. Click **Index** button
-3. Select folders to search
-4. Wait for indexing
-5. Search using the text box
+2. Click **Index Settings** button
+3. Index folders (quick: Documents/Desktop/Downloads, or custom path)
+4. Wait for indexing to complete
+5. Search anything using the search box
 
 ## 🛠️ Configuration
 
