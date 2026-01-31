@@ -24,11 +24,19 @@ class ModelManager:
         if self._initialized:
             return
         
+        # Set device: MPS for Apple Silicon, CPU otherwise
+        if torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+            print("Using Apple Silicon (MPS) device")
+        else:
+            self.device = torch.device("cpu")
+            print("Using CPU device")
+        
         self.slm: AutoModelForCausalLM | None = None
         self.tokenizer: AutoTokenizer | None = None
         self.bge_tokenizer = AutoTokenizer.from_pretrained(config.bge_model)
         self.text_encoder = SentenceTransformer('sentence-transformers/all-MiniLM-L12-v2')
-        self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(self.device)
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", use_fast=True)
         self.clip_model.eval()
 
@@ -98,6 +106,7 @@ class ModelManager:
                 if pil_images:
                     try:
                         inputs = self.clip_processor(images=pil_images, return_tensors="pt")
+                        inputs = {k: v.to(self.device) for k, v in inputs.items()}
                         embeddings = self.clip_model.get_image_features(**inputs)
                         embeddings = embeddings / embeddings.norm(dim=-1, keepdim=True)
                         all_embeddings.append(embeddings.cpu().numpy())
@@ -260,6 +269,9 @@ Rules:
             del self.tokenizer
             self.slm = None
             self.tokenizer = None
-            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
             import gc
             gc.collect()

@@ -1,8 +1,8 @@
 # 🦦 OtterSearch
 
-**AI-powered image & PDF search engine for your computer**
+**AI-powered multimodal search engine for your computer**
 
-Help you easily find PDFs and images in your laptop using semantic understanding.
+Find PDFs and images in your laptop using semantic understanding with image embeddings and AI-powered multimodal search.
 
 ## ⚡ Quick Start (30 Seconds)
 
@@ -19,10 +19,10 @@ python __main__.py
 
 ## 🎯 Features
 
-- 🖼️ **Image Search** - Find images using text descriptions
-- 📄 **PDF Search** - Search across PDF documents (indexes first 3 pages)
-- 🤖 **AI-Powered** - Semantic understanding, not just keywords
-- 🔍 **Query Expansion** - Uses SLM (Small Language Model) to enhance search queries
+- 🖼️ **Image Search** - Find images using text descriptions with CLIP embeddings
+- 📄 **PDF Search** - Search across PDF documents (indexes first 3 pages) with MiniLM embeddings
+- 🤖 **AI-Powered** - Multimodal semantic understanding using image embeddings
+- 🔍 **Query Expansion** - Uses LFM2-350M (Small Language Model) to enhance search queries
 - ⚡ **Fast** - HNSW vector indexing
 - 🏠 **Local** - Everything stays on your computer
 - 💻 **Lightweight** - Minimal dependencies, runs anywhere
@@ -147,4 +147,4 @@ MIT License - See [LICENSE](LICENSE)
 
 **Find anything in your images and PDFs!** 🦦
 
-Built with CLIP, transformers, and HNSW vector search.
+Built with CLIP embeddings, MiniLM embeddings, LFM2-350M query expansion, and HNSW vector search.

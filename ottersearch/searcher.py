@@ -1,6 +1,7 @@
 """
 Search module for OtterSearch
 """
+import time
 import torch
 import numpy as np
 from .config import config
@@ -69,7 +70,13 @@ class HybridSearcher:
             List of SearchResult objects, deduplicated and sorted by score descending.
             Each unique document path appears only once with its highest similarity score.
         """
+        start_time = time.time()
+        
+        # Time SLM query expansion
+        slm_start = time.time()
         variations = self.model_manager.generate_query_variations(query, n=3)
+        slm_time = time.time() - slm_start
+        
         query_type = [self._detect_query_type(variation) for variation in variations]
         if 'image' in query_type:
             query_type = 'image'
@@ -85,11 +92,14 @@ class HybridSearcher:
             stores_to_search.append(('image', self.vector_store_image))
         
         all_results: dict[str, float] = {}
-
+        
+        # Time vector search
+        search_start = time.time()
         for store_type, vector_store in stores_to_search:
             for variation in variations:
                 if store_type == 'image':
                     inputs = self.model_manager.clip_processor(text=[variation], return_tensors="pt", padding=True)
+                    inputs = {k: v.to(self.model_manager.device) for k, v in inputs.items()}
                     with torch.no_grad():
                         query_embedding = self.model_manager.clip_model.get_text_features(**inputs)
                         query_embedding = query_embedding / query_embedding.norm(dim=-1, keepdim=True)
@@ -100,6 +110,8 @@ class HybridSearcher:
                 vec_results = vector_store.search(query_embedding.reshape(1, -1), k=top_k)
                 for doc_id, score in vec_results:
                     all_results[doc_id] = score
+        
+        search_time = time.time() - search_start
         
         sorted_ids = sorted(all_results.items(), key=lambda x: x[1], reverse=True)
         
@@ -128,4 +140,5 @@ class HybridSearcher:
                 snippet=snippet
             ))
         
+        total_time = time.time() - start_time
         return results

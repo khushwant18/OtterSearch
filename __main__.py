@@ -1,9 +1,13 @@
 """
 OtterSearch - Web UI launcher
 """
+import os
 from pathlib import Path
 from ottersearch.api import create_app
 from ottersearch.config import config
+
+# Disable tokenizers parallelism warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 UI_HTML = (Path(__file__).parent / "ui.html").read_text()
 
