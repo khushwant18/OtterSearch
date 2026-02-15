@@ -15,6 +15,26 @@ Just download the right version for your Mac, open the DMG, and drag to Applicat
 
 **Windows:** Coming soon! For now, use Python setup below.
 
+### 📦 Installation Steps
+
+1. **Download** the DMG file for your Mac
+2. **Open** the downloaded DMG file
+3. **Drag** OtterSearch to the Applications folder
+4. **Launch** OtterSearch from Applications
+
+### ⚠️ First Launch - Security Warning
+
+If you see **"OtterSearch can't be opened because Apple cannot check it for malicious software"**:
+
+1. **Right-click** (or Control+click) on OtterSearch in Applications
+2. Select **"Open"** from the menu
+3. Click **"Open"** in the security dialog
+4. App will launch (only need to do this once!)
+
+This is normal for unsigned apps. The app is safe - it's open source!
+
+---
+
 ### ✨ What's New in v1.0.0
 
 - 📑 **Scanned PDF Detection** - Automatically detects pages with minimal text and indexes them as image embeddings using CLIP
