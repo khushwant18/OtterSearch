@@ -1,0 +1,61 @@
+name: Build Intel DMG
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags
+
+jobs:
+  build-intel:
+    runs-on: macos-13  # Intel Mac runner (macos-12 or macos-13)
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Python backend
+      run: |
+        pyinstaller ottersearch.spec --clean
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Build Electron app
+      run: |
+        cd electron
+        npm install
+        npm run build-mac
+    
+    - name: Find DMG file
+      id: find_dmg
+      run: |
+        DMG_PATH=$(find electron/dist -name "*.dmg" -type f | head -1)
+        echo "dmg_path=$DMG_PATH" >> $GITHUB_OUTPUT
+        echo "dmg_name=$(basename $DMG_PATH)" >> $GITHUB_OUTPUT
+    
+    - name: Upload DMG as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: OtterSearch-Intel-DMG
+        path: ${{ steps.find_dmg.outputs.dmg_path }}
+    
+    - name: Upload to Release (if tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.find_dmg.outputs.dmg_path }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
