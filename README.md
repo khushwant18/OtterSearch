@@ -8,8 +8,8 @@ Find PDFs and images in your laptop using semantic understanding with image embe
 
 **Ready-to-use desktop app - no installation required!**
 
-- [OtterSearch-1.0.0-arm64.dmg](https://github.com/khushwant18/ottersearch/releases/latest) - For Apple Silicon (M1/M2/M3)
-- [OtterSearch-1.0.0.dmg](https://github.com/khushwant18/ottersearch/releases/latest) - For Intel Macs
+- [OtterSearch-1.0.0-arm64.dmg](https://github.com/khushwant18/OtterSearch/releases/download/v1.0.0/OtterSearch-1.0.0-arm64.dmg) - For Apple Silicon (M1/M2/M3)
+- [OtterSearch-1.0.0.dmg](https://github.com/khushwant18/OtterSearch/releases/download/v1.0.0/OtterSearch-1.0.0.dmg) - For Intel Macs
 
 Just download the right version for your Mac, open the DMG, and drag to Applications!
 
