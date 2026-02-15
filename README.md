@@ -4,7 +4,55 @@
 
 Find PDFs and images in your laptop using semantic understanding with image embeddings and AI-powered multimodal search.
 
-## ⚡ Quick Start (30 Seconds)
+## 📥 Download (macOS)
+
+**Ready-to-use desktop app - no installation required!**
+
+- [OtterSearch-1.0.0-arm64.dmg](https://github.com/khushwant18/ottersearch/releases/latest) - For Apple Silicon (M1/M2/M3)
+- [OtterSearch-1.0.0.dmg](https://github.com/khushwant18/ottersearch/releases/latest) - Universal (Intel + Apple Silicon)
+
+Just download, open the DMG, and drag to Applications. That's it!
+
+**Windows:** Coming soon! For now, use Python setup below.
+
+### ✨ What's New in v1.0.0
+
+- 📑 **Scanned PDF Detection** - Automatically detects pages with minimal text and indexes them as image embeddings using CLIP
+- ⏸️ **Pause/Resume/Stop** - Full control over indexing with progress persistence across app restarts
+- 💾 **Data Durability** - SQLite WAL mode with automatic checkpoints ensures no data loss
+- 🔄 **Smart Updates** - Only indexes new/modified files, dramatically faster reindexing
+
+## 🎯 Features
+
+- 🖼️ **Image Search** - Find images using text descriptions with CLIP embeddings
+- 📄 **PDF Search** - Search across PDF documents (indexes first 2 pages) with MiniLM embeddings
+- 📑 **Scanned PDF Support** - Automatically detects and indexes scanned pages as images using CLIP
+- ⏸️ **Pause/Resume Indexing** - Control indexing progress, pause and resume anytime
+- 🛑 **Smart Updates** - Only indexes new/modified files, skips already-indexed ones
+- 🤖 **AI-Powered** - Multimodal semantic understanding using image embeddings
+- 🔍 **Query Expansion** - Uses LFM2-350M (Small Language Model) to enhance search queries
+- ⚡ **Fast** - HNSW vector indexing with WAL-mode SQLite for durability
+- 🏠 **Local** - Everything stays on your computer
+- 💻 **Lightweight** - Minimal dependencies, runs anywhere
+
+## 📖 Usage
+
+1. Launch OtterSearch from Applications 
+2. Click **Index Settings** button
+3. Index folders (quick: Documents/Desktop/Downloads, or custom path)
+4. Use **Pause/Resume/Stop** buttons to control indexing progress
+5. Progress is saved - you can close the app and resume later
+6. Search anything using the search box
+
+**Note:** Scanned PDFs are automatically detected and indexed as images for better search accuracy!
+
+---
+
+## 🐍 Python Setup (Alternative)
+
+If you prefer to run from source or don't want the DMG:
+
+### ⚡ Quick Start (30 Seconds)
 
 ```bash
 # Setup with uv (fastest)
@@ -17,31 +65,21 @@ python __main__.py
 # http://localhost:8000
 ```
 
-## 🎯 Features
-
-- 🖼️ **Image Search** - Find images using text descriptions with CLIP embeddings
-- 📄 **PDF Search** - Search across PDF documents (indexes first 3 pages) with MiniLM embeddings
-- 🤖 **AI-Powered** - Multimodal semantic understanding using image embeddings
-- 🔍 **Query Expansion** - Uses LFM2-350M (Small Language Model) to enhance search queries
-- ⚡ **Fast** - HNSW vector indexing
-- 🏠 **Local** - Everything stays on your computer
-- 💻 **Lightweight** - Minimal dependencies, runs anywhere
-
-## 📦 Requirements
+### 📦 Requirements
 
 - Python 3.9+
 - ~1GB disk space (for ML models)
 - `uv` (or standard pip)
 
-## 🚀 Setup Options
+### 🚀 Setup Options
 
-### Option 1: uv (Recommended - Fastest)
+**Option 1: uv (Recommended - Fastest)**
 ```bash
 bash setup_uv.sh
 python __main__.py
 ```
 
-### Option 2: Standard pip
+**Option 2: Standard pip**
 ```bash
 python -m venv venv
 source venv/bin/activate
@@ -49,13 +87,7 @@ pip install -r requirements.txt
 python __main__.py
 ```
 
-## 📖 Usage
-
-1. Open **http://localhost:8000**
-2. Click **Index Settings** button
-3. Index folders (quick: Documents/Desktop/Downloads, or custom path)
-4. Wait for indexing to complete
-5. Search anything using the search box
+---
 
 ## 🛠️ Configuration
 
